@@ -115,7 +115,6 @@ RSMALL=5
 
 for (names in 1:4) {
     NAME=paste0("stone", names)
-    NAME="wendy"
     img=LoadBitmap(paste0(NAME, ".png"))
     
     # 1. CALCULATE 1px-WIDTH BORDER OF STONE
