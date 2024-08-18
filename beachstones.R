@@ -47,7 +47,7 @@ DrawEllip = function(img, x0, y0, a, b, inc=TRUE, val=1, fill=FALSE, thick=1) {
         indices=which( ((row(img)-x0)/a)^2 + ((col(img)-y0)/b)^2 < 1 )
     } else {
         indices=which( ((row(img)-x0)/(a+thick/2))^2 + ((col(img)-y0)/(b+thick/2))^2 <  1 &
-                           ((row(img)-x0)/(a-thick/2))^2 + ((col(img)-y0)/(b-thick/2))^2 >= 1 )
+                       ((row(img)-x0)/(a-thick/2))^2 + ((col(img)-y0)/(b-thick/2))^2 >= 1 )
     }
     if (inc) img[indices]=img[indices]+val
     else img[indices]=val
@@ -113,7 +113,7 @@ matrixfilter=function(img, kernel=matrix(c(0,0.25,0, 0.25,0,0.25, 0,0.25,0),
 RLARGE=7  # circles to plot radius
 RSMALL=5
 
-for (names in 1:4) {
+for (names in 4:4) {
     NAME=paste0("stone", names)
     img=LoadBitmap(paste0(NAME, ".png"))
     
@@ -122,12 +122,14 @@ for (names in 1:4) {
     border[border==1]=0  # empty shape
     border[border>0]=1  # set all detected borders to 1
     border[img==0]=0  # drop borders not belonging to shape
-
+    DIMX=nrow(border)
+    DIMY=ncol(border)
+    
     
     # 2. CALCULATE MAX DIAMETER
     ind=which(border==1, arr.ind=TRUE, useNames=FALSE)  # coords of pixels in border
     NUMPOINTS=nrow(ind)  # number of pixels in border
-    maxdist=0
+    maxdist=0  #arbitrarily low number
     for (i in 1:(NUMPOINTS-1)) {
         for (j in (i+1):NUMPOINTS) {
             dist=((ind[i,1]-ind[j,1])^2 +
@@ -143,12 +145,14 @@ for (names in 1:4) {
     y0=ind[p0,2]
     x1=ind[p1,1]
     y1=ind[p1,2]
-    border=DrawLine(border, x0, y0, x1, y1, inc=FALSE, val=0.5)  # draw max diameter
-    border=DrawCircle(border, round(x0), round(y0),
-                      RLARGE, inc=FALSE, val=0.5, thick=2)
-    border=DrawCircle(border, round(x1), round(y1),
-                      RLARGE, inc=FALSE, val=0.5, thick=2)
-    
+    onlylines=border*0
+    onlylines=DrawLine(onlylines, x0, y0, x1, y1,
+                       inc=FALSE, val=0.5)  # draw max diameter
+    onlylines=DrawCircle(onlylines, round(x0), round(y0),
+                         RLARGE, inc=FALSE, val=0.5, thick=2)
+    onlylines=DrawCircle(onlylines, round(x1), round(y1),
+                         RLARGE, inc=FALSE, val=0.5, thick=2)
+ 
     
     # 3. ORDER BORDER PIXELS BY MIN NEIGHBOUR DISTANCE
     indorder=matrix(ind[p0,], nrow=1)  # ordered pixels starting from p0
@@ -157,7 +161,7 @@ for (names in 1:4) {
     # Recursively look for closest pixel to current checked pixel (i)
     for (i in 1:(nrow(indcheck)-1)) {
         NUMPOINTSCHECK=nrow(indcheck)  # number of border pixels still to check
-        mindist=9999999999
+        mindist=9999999999  #arbitrarily high number
         indorderlast=indorder[nrow(indorder),]  # last pixel added to indorder
         for (j in 1:NUMPOINTSCHECK) {
             dist=((indorderlast[1]-indcheck[j,1])^2 +
@@ -176,84 +180,133 @@ for (names in 1:4) {
                row.names=FALSE)  # output ordered pixels
     
     
-    # 4. CALCULATE 2 TANGENTIAL POINTS
-    m=(y1-y0)/(x1-x0)  # slope m=tan(alpha)
+    # 4. CALCULATE 2 TANGENTIAL POINTS AND DRAW 4 ELLIPSES QUARTERS
+    m=(y1-y0)/(x1-x0)  # slope of max diameter (m=tan(alpha))
     morth=-1/m         # slope orthogonal to m
-    anglem=atan(m)*180/pi  # angle of m in degrees
-    GAP=20  # number of pixels before and after tangential pixel checked
+    anglemrad=atan(m)  # angle of m in radians
+    anglem=anglemrad*180/pi  # angle of m in degrees
+    GAP=40  # number of pixels before and after tangential pixel checked
     
-    NTAN=2  # number of tangential points to calculate
+    # Starting and ending pixel index to check on each side of the diameter
     START=unname(c(which(indorder[,1]==x0 & indorder[,2]==y0),
                    which(indorder[,1]==x1 & indorder[,2]==y1)))
     END=c(START[2]-1, nrow(indorder))
     
-    for (n in 1:NTAN) {
+    model=onlylines*0
+    for (n in 1:2) {  # 2 tangential points to calculate
         angulospre=c()
         angulospos=c()
         angulosmed=c()
-        mindist=9999999999
+        mindist=9999999999  #arbitrarily high number
         xrange=(START[n]+GAP):(END[n]-GAP)
         for (i in xrange) {
-            # [[]] to unname all int values
+            # all [[]] are to unname all int values
             xpre=indorder[[i-GAP,1]]; ypre=indorder[[i-GAP,2]]
             xc=indorder[[i,1]];       yc=indorder[[i,2]]
             xpos=indorder[[i+GAP,1]]; ypos=indorder[[i+GAP,2]]
             
             tanalphapre=(yc-ypre)/(xc-xpre)
             tanalphapos=(ypos-yc)/(xpos-xc)
-            
+
+            # Averaging pre and pos angles is much more
+            # convenient than averaging pre and pos slopes            
             anglepre=atan(tanalphapre)*180/pi
             anglepos=atan(tanalphapos)*180/pi    
-            anglemed=(anglepre+anglepos)/2  # averate pre and pos calculated angles
-        
+            anglemed=(anglepre+anglepos)/2
+
             angulospre=c(angulospre, anglepre)    
             angulospos=c(angulospos, anglepos)
             angulosmed=c(angulosmed, anglemed)
             
             dist=abs(anglemed-anglem)
-            if(dist < mindist) {
+            if(dist < mindist) {  # pixel with tangent angle closest to anglem
                 mindist=dist
                 pclosest=i
             }
             
         }
+
+        xorth=indorder[[pclosest,1]]
+        yorth=indorder[[pclosest,2]]
+        onlylines=DrawCircle(onlylines, round(xorth), round(yorth),
+                             RSMALL, inc=FALSE, val=0.5)
+        
+        # Draw angle for every contour pixel
         png(paste0(NAME, "_tangentangles_",n,".png"), width=512, height=400)
         plot(xrange, angulosmed, type='l', ylim=c(-90,90), 
              main=paste0("Angles ", n ,"/2 of '", NAME,"'"),
              xlab="Contour pixel", ylab="Angle (º)", yaxt="n"
              )
         axis(2, at=seq(-90, 90, by=45), las=2)
-        
         lines(xrange, angulospre, col='red')
         lines(xrange, angulospos, col='blue')
-        abline(h=anglem, v=pclosest, lty=2)  # real angle of max diameter
+        abline(h=anglem, v=pclosest, lty=2, col='gray')  # real angle of max diameter
         legend("topright", legend=c("Avg angle", "Pre angle", "Pos angle"),
                fill=c('black','red','blue'))
         dev.off()
     
-        xorth=indorder[[pclosest,1]]
-        yorth=indorder[[pclosest,2]]
-        border=DrawCircle(border, round(xorth), round(yorth),
-                          RSMALL, inc=FALSE, val=0.5)
-        
-        # Solve 2 equations linear system: A * x = b -> x = inv(A) * b
-        # based on the equation of the line with a given slope (m and morth)
-        # that passes through a point ((x0,y0) and (xorth,yorth)):
-        # y-y0 = m*(x-x0)
-        # y-yorth = morth*(x-xorth)
+        # Solve 2 equations linear system: A * k = b -> k = inv(A) * b
+        # based on the equation of the line with a given slope
+        # that passes through a point:
+        #   y-y0    = m     * (x-x0)
+        #   y-yorth = morth * (x-xorth)
         A=matrix(nrow=2, ncol=2)
         A[1,]=c(m,     -1)
         A[2,]=c(morth, -1)
         b=as.matrix(c(m*x0-y0, morth*xorth-yorth))
-        xorthp=t(solve(A, b))  # equivalent to inv(A) * b = solve(A) %*% b
+        k=t(solve(A, b))  # equivalent to inv(A) * b = solve(A) %*% b
+        xorthc=k[1]
+        yorthc=k[2]
     
-        border=DrawLine(border, xorth, yorth, xorthp[1],
-                        xorthp[2], inc=FALSE, val=0.5)  # draw max diameter
-        border=DrawCircle(border, round(xorthp[1]), round(xorthp[2]),
-                          RSMALL, inc=FALSE, val=0.5)
+        onlylines=DrawLine(onlylines, xorth, yorth, xorthc, yorthc,
+                           inc=FALSE, val=0.5)  # draw max diameter
+        onlylines=DrawCircle(onlylines, round(xorthc), round(yorthc),
+                             RSMALL, inc=FALSE, val=0.5)
+        
+        # Draw 2 ellipses defined by (xorthc, yorthc) and (x0,y0) and (x1,y1)
+        RESOL=100  # number of points to define each of the 1/4 ellipses
+        # Ellipse B axis
+        axisB=((xorthc-xorth)^2+(yorthc-yorth)^2)^0.5
+        ellipX=c(x0,x1)
+        ellipY=c(y0,y1)
+        for (ellip in 1:2) {  # 2 partial ellipses to plot for each tan point
+            # Ellipse A axis
+            axisA=((xorthc-ellipX[ellip])^2+(yorthc-ellipY[ellip])^2)^0.5
+            anglerange=seq(0, pi/2, pi/2/RESOL)
+            
+            # Ad-hoc taylored 4 sections of ellipses
+            # (room for improvement)
+            if (n==1 & ellip==2) anglerange=anglerange+pi/2
+            if (n==2 & ellip==1) anglerange=anglerange-pi/2
+            if (n==2 & ellip==2) anglerange=anglerange+pi
+
+            xpre=axisA*cos(anglerange[1])
+            ypre=axisB*sin(anglerange[1])
+            xplotpre=xorthc+xpre*cos(-anglemrad)+ypre*sin(-anglemrad)
+            yplotpre=yorthc-xpre*sin(-anglemrad)+ypre*cos(-anglemrad)
+            for (angle in anglerange) {
+                xpre=axisA*cos(angle)
+                ypre=axisB*sin(angle)
+                # Ellipse 2D rotation by m (not sure why anglemrad needs -)
+                xplot=xorthc+xpre*cos(-anglemrad)+ypre*sin(-anglemrad)
+                yplot=yorthc-xpre*sin(-anglemrad)+ypre*cos(-anglemrad)
+                if (xplot>=0 & xplot<=DIMX & yplot>=0 & yplot<=DIMY)
+                    model=DrawLine(model, xplotpre,yplotpre, xplot,yplot,
+                                   inc=FALSE, val=1)
+                xplotpre=xplot
+                yplotpre=yplot
+            }
+        }
     }
+
+    SaveBitmap(model, paste0(NAME, "_model_only.png"))
+    SaveBitmap(border, paste0(NAME, "_border_only.png"))
+    SaveBitmap(onlylines/max(onlylines), paste0(NAME, "_lines_only.png"))
     
-    SaveBitmap(border, paste0(NAME, "_border_maxdiameter.png"))
+    border[onlylines > 0]=onlylines[onlylines > 0]
+    model[onlylines > 0]=onlylines[onlylines > 0]
+    SaveBitmap(border, paste0(NAME, "_border_lines.png"))    
+    SaveBitmap(model, paste0(NAME, "_model_lines.png"))
 }
 
 
