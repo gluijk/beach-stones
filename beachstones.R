@@ -112,11 +112,13 @@ matrixfilter=function(img, kernel=matrix(c(0,0.25,0, 0.25,0,0.25, 0,0.25,0),
 
 RLARGE=7  # circles to plot radius
 RSMALL=5
+NSTONES=2
 
-for (names in 4:4) {
-    NAME=paste0("stone", names)
+for (stone in 1:NSTONES) {  # process stones
+    NAME=paste0("stone", stone)
     img=LoadBitmap(paste0(NAME, ".png"))
-    
+
+
     # 1. CALCULATE 1px-WIDTH BORDER OF STONE
     border=matrixfilter(img)
     border[border==1]=0  # empty shape
@@ -152,7 +154,7 @@ for (names in 4:4) {
                          RLARGE, inc=FALSE, val=0.5, thick=2)
     onlylines=DrawCircle(onlylines, round(x1), round(y1),
                          RLARGE, inc=FALSE, val=0.5, thick=2)
- 
+    
     
     # 3. ORDER BORDER PIXELS BY MIN NEIGHBOUR DISTANCE
     indorder=matrix(ind[p0,], nrow=1)  # ordered pixels starting from p0
@@ -207,13 +209,13 @@ for (names in 4:4) {
             
             tanalphapre=(yc-ypre)/(xc-xpre)
             tanalphapos=(ypos-yc)/(xpos-xc)
-
+    
             # Averaging pre and pos angles is much more
             # convenient than averaging pre and pos slopes            
             anglepre=atan(tanalphapre)*180/pi
             anglepos=atan(tanalphapos)*180/pi    
             anglemed=(anglepre+anglepos)/2
-
+    
             angulospre=c(angulospre, anglepre)    
             angulospos=c(angulospos, anglepos)
             angulosmed=c(angulosmed, anglemed)
@@ -225,7 +227,7 @@ for (names in 4:4) {
             }
             
         }
-
+    
         xorth=indorder[[pclosest,1]]
         yorth=indorder[[pclosest,2]]
         onlylines=DrawCircle(onlylines, round(xorth), round(yorth),
@@ -279,7 +281,7 @@ for (names in 4:4) {
             if (n==1 & ellip==2) anglerange=anglerange+pi/2
             if (n==2 & ellip==1) anglerange=anglerange-pi/2
             if (n==2 & ellip==2) anglerange=anglerange+pi
-
+    
             xpre=axisA*cos(anglerange[1])
             ypre=axisB*sin(anglerange[1])
             xplotpre=xorthc+xpre*cos(-anglemrad)+ypre*sin(-anglemrad)
@@ -298,7 +300,7 @@ for (names in 4:4) {
             }
         }
     }
-
+    
     SaveBitmap(model, paste0(NAME, "_model_only.png"))
     SaveBitmap(border, paste0(NAME, "_border_only.png"))
     SaveBitmap(onlylines/max(onlylines), paste0(NAME, "_lines_only.png"))
@@ -310,3 +312,25 @@ for (names in 4:4) {
 }
 
 
+# 5. CHECK MODEL FITTING
+
+# First manually create solid versions of each model (fill) -> _model_solid.png
+for (stone in 1:NSTONES) {  # process stones
+    NAME=paste0("stone", stone)
+
+    # Solid versions of stone and stone model
+    bordersolid=LoadBitmap(paste0(NAME, ".png"))
+    modelsolid=LoadBitmap(paste0(NAME, "_model_solid.png"))
+
+    intersec=length(which(bordersolid==1 & modelsolid==1))
+    # A: % of the model shape that falls into the real stone
+    A=intersec/sum(bordersolid)
+    # B: % of the real stone that falls into the model shape
+    B=intersec/sum(modelsolid)
+    Accuracy=(A * B)^0.5
+    
+    print(paste0("Performance of stone '", NAME, "' model: ",
+                 "A=", round(A*100,2), "%, ",
+                 "B=", round(B*100,2), "%, ",
+                 "Accuracy=(A*B)^0.5=", round(Accuracy*100,2), "%"))
+}
