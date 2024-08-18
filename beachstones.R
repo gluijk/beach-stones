@@ -115,6 +115,7 @@ RSMALL=5
 
 for (names in 1:4) {
     NAME=paste0("stone", names)
+    NAME="wendy"
     img=LoadBitmap(paste0(NAME, ".png"))
     
     # 1. CALCULATE 1px-WIDTH BORDER OF STONE
@@ -144,8 +145,10 @@ for (names in 1:4) {
     x1=ind[p1,1]
     y1=ind[p1,2]
     border=DrawLine(border, x0, y0, x1, y1, inc=FALSE, val=0.5)  # draw max diameter
-    border=DrawCircle(border, x0, y0, RLARGE, inc=FALSE, val=0.5, thick=2)
-    border=DrawCircle(border, x1, y1, RLARGE, inc=FALSE, val=0.5, thick=2)
+    border=DrawCircle(border, round(x0), round(y0),
+                      RLARGE, inc=FALSE, val=0.5, thick=2)
+    border=DrawCircle(border, round(x1), round(y1),
+                      RLARGE, inc=FALSE, val=0.5, thick=2)
     
     
     # 3. ORDER BORDER PIXELS BY MIN NEIGHBOUR DISTANCE
@@ -231,7 +234,8 @@ for (names in 1:4) {
     
         xorth=indorder[[pclosest,1]]
         yorth=indorder[[pclosest,2]]
-        border=DrawCircle(border, xorth, yorth, RSMALL, inc=FALSE, val=0.5)
+        border=DrawCircle(border, round(xorth), round(yorth),
+                          RSMALL, inc=FALSE, val=0.5)
         
         # Solve 2 equations linear system: A * x = b -> x = inv(A) * b
         # based on the equation of the line with a given slope (m and morth)
@@ -246,7 +250,7 @@ for (names in 1:4) {
     
         border=DrawLine(border, xorth, yorth, xorthp[1],
                         xorthp[2], inc=FALSE, val=0.5)  # draw max diameter
-        border=DrawCircle(border, xorthp[1], xorthp[2],
+        border=DrawCircle(border, round(xorthp[1]), round(xorthp[2]),
                           RSMALL, inc=FALSE, val=0.5)
     }
     
