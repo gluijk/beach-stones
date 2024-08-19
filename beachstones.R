@@ -1,6 +1,6 @@
 # Beach stones model
 # www.overfitting.net
-# https://www.overfitting.net/
+# https://www.overfitting.net/2024/08/modelo-geometrico-de-piedra-de-playa.html
 
 
 library(png)
@@ -322,14 +322,14 @@ for (stone in 1:NSTONES) {  # process stones
     bordersolid=LoadBitmap(paste0(NAME, ".png"))
     modelsolid=LoadBitmap(paste0(NAME, "_model_solid.png"))
 
-    intersec=length(which(bordersolid==1 & modelsolid==1))
+    intersec=length(which(bordersolid==1 & modelsolid==1))  # common pixels
     # A: % of the model shape that falls into the real stone
-    A=intersec/sum(bordersolid)
+    A=intersec/sum(modelsolid)
     # B: % of the real stone that falls into the model shape
-    B=intersec/sum(modelsolid)
+    B=intersec/sum(bordersolid)
     Accuracy=(A * B)^0.5
     
-    print(paste0("Performance of stone '", NAME, "' model: ",
+    print(paste0("Performance of '", NAME, "' model: ",
                  "A=", round(A*100,2), "%, ",
                  "B=", round(B*100,2), "%, ",
                  "Accuracy=(A*B)^0.5=", round(Accuracy*100,2), "%"))
