@@ -177,7 +177,6 @@ for (stone in 1:NSTONES) {  # process stones
         indcheck=indcheck[-pclosest,]  # remove pixel from indcheck
     }
     indorder=rbind(indorder, indcheck)  # add last pixel to indorder
-    rm(indcheck)  # free tmp indcheck
     write.csv2(indorder, paste0(NAME, "_orderedpixels.csv"),
                row.names=FALSE)  # output ordered pixels
     
@@ -185,7 +184,7 @@ for (stone in 1:NSTONES) {  # process stones
     # 4. CALCULATE 2 TANGENTIAL POINTS AND DRAW 4 ELLIPSES QUARTERS
     m=(y1-y0)/(x1-x0)  # slope of max diameter (m=tan(alpha))
     morth=-1/m         # slope orthogonal to m
-    anglemrad=atan(m)  # angle of m in radians
+    anglemrad=atan(m)        # angle of m in radians
     anglem=anglemrad*180/pi  # angle of m in degrees
     GAP=40  # number of pixels before and after tangential pixel checked
     
