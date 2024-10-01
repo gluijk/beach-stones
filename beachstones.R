@@ -163,7 +163,7 @@ for (stone in 1:NSTONES) {  # process stones
     # Recursively look for closest pixel to current checked pixel (i)
     for (i in 1:(nrow(indcheck)-1)) {
         NUMPOINTSCHECK=nrow(indcheck)  # number of border pixels still to check
-        mindist=9999999999  #arbitrarily high number
+        mindist=9999999999  # arbitrarily high number
         indorderlast=indorder[nrow(indorder),]  # last pixel added to indorder
         for (j in 1:NUMPOINTSCHECK) {
             dist=((indorderlast[1]-indcheck[j,1])^2 +
